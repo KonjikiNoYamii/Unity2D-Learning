@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -32,6 +33,7 @@ public class Player : MonoBehaviour
     private bool isGrounded;
     public bool isFacingRight = true;
     public bool isAttacking;
+    public bool isHurt;
     private Rigidbody2D rb;
     private Animator animator;
     void OnDrawGizmosSelected()
@@ -64,9 +66,12 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        move = Input.GetAxis("Horizontal");
+        if (!isAttacking && !isHurt)
+        {
+            move = Input.GetAxis("Horizontal");
+        }
 
-        animator.SetFloat("Speed" ,Mathf.Abs(move));
+        animator.SetFloat("Speed", Mathf.Abs(move));
 
         animator.SetBool("IsRunning", running && Mathf.Abs(move) > 0.1f);
 
@@ -166,7 +171,7 @@ public class Player : MonoBehaviour
             currentSpeed *= 2;
         }
 
-        if (!isWallJumping && !isAttacking)
+        if (!isWallJumping && !isAttacking && !isHurt)
         {
             rb.linearVelocity = new Vector2(move * currentSpeed, rb.linearVelocity.y);
         }
@@ -199,6 +204,24 @@ public class Player : MonoBehaviour
             );
         }
 
+    }
+
+    public void TakeHit()
+    {
+        isHurt = true;
+
+        isAttacking = false;
+
+        animator.SetTrigger("Hurt");
+
+        StartCoroutine(HurtRoutine());
+    }
+
+    IEnumerator HurtRoutine()
+    {
+        yield return new WaitForSeconds(0.3f);
+
+        isHurt = false;
     }
 
 }

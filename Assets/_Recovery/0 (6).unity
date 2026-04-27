@@ -1086,6 +1086,7 @@ MonoBehaviour:
   wallJumpPush: 5
   isFacingRight: 1
   isAttacking: 0
+  isHurt: 0
 --- !u!212 &1484432188
 SpriteRenderer:
   serializedVersion: 2
@@ -1706,6 +1707,7 @@ GameObject:
   - component: {fileID: 2071261560}
   - component: {fileID: 2071261559}
   - component: {fileID: 2071261564}
+  - component: {fileID: 2071261565}
   m_Layer: 8
   m_Name: Slime
   m_TagString: Untagged
@@ -1898,6 +1900,20 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2071261565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071261558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a7d6635d3b4ba4a789923cf2cbad43b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
+  attackRange: 1.5
+  attackCooldown: 1.5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

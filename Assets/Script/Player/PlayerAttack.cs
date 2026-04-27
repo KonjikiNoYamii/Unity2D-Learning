@@ -5,7 +5,6 @@ public class PlayerAttack : MonoBehaviour
     public GameObject hitEffect;
 
     [Header("Attack Settings")]
-    public Transform attackPoint;
     public int attackDamage = 1;
     public float attackRange = 0.5f;
     public LayerMask enemyLayer;
@@ -13,6 +12,9 @@ public class PlayerAttack : MonoBehaviour
     [Header("Cooldown Settings")]
     public float attackCooldown = 0.5f;
     private float nextAttackTime = 0f;
+
+    [Header("Attack Direction")]
+    public Vector2 attackOffset = new Vector2(0.5f, 0.7f);
 
     private Player player;
     private Animator animator;
@@ -28,8 +30,6 @@ public class PlayerAttack : MonoBehaviour
 
         animator = GetComponent<Animator>();
 
-        animator.ResetTrigger("Attack");
-
         if (animator == null)
         {
             Debug.Log("Animator tidak ditemukan di player");
@@ -39,7 +39,7 @@ public class PlayerAttack : MonoBehaviour
     void Update()
     {
 
-        if (Input.GetKeyDown(KeyCode.F) && Time.time >= nextAttackTime && !player.isAttacking)
+        if (Input.GetMouseButtonDown(0) && Time.time >= nextAttackTime && !player.isAttacking && !player.isHurt)
         {
             player.isAttacking = true;
 
@@ -53,11 +53,17 @@ public class PlayerAttack : MonoBehaviour
     {
         Debug.Log("Attack");
 
+        float direction = player.isFacingRight ? 1f : -1f;
+
+        Vector2 attackPos = (Vector2)transform.position +
+        new Vector2(attackOffset.x * direction, attackOffset.y);
+
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(
-            attackPoint.position,
+            attackPos,
             attackRange,
             enemyLayer
         );
+
 
         foreach (Collider2D obj in hitEnemies)
         {
@@ -88,10 +94,15 @@ public class PlayerAttack : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        if (attackPoint == null)
-            return;
+        Player p = GetComponent<Player>();
+        if (p == null) return;
+
+        float direction = p.isFacingRight ? 1f : -1f;
+
+        Vector2 attackPos = (Vector2)transform.position +
+        new Vector2(attackOffset.x * direction, attackOffset.y);
 
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(attackPoint.position, attackRange);
+        Gizmos.DrawWireSphere(attackPos, attackRange);
     }
 }

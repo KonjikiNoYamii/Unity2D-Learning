@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class PlayerAttack : MonoBehaviour
 {
@@ -9,12 +10,16 @@ public class PlayerAttack : MonoBehaviour
     public float attackRange = 0.5f;
     public LayerMask enemyLayer;
 
+    private bool canDealDamage;
+
     [Header("Cooldown Settings")]
     public float attackCooldown = 0.5f;
     private float nextAttackTime = 0f;
 
     [Header("Attack Direction")]
     public Vector2 attackOffset = new Vector2(0.5f, 0.7f);
+
+    private HashSet<Collider2D> hitTargets = new HashSet<Collider2D>();
 
     private Player player;
     private Animator animator;
@@ -41,6 +46,7 @@ public class PlayerAttack : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0) && Time.time >= nextAttackTime && !player.isAttacking && !player.isHurt)
         {
+            hitTargets.Clear();
             player.isAttacking = true;
 
             animator.SetTrigger("Attack");
@@ -51,6 +57,8 @@ public class PlayerAttack : MonoBehaviour
 
     public void Attack()
     {
+        if (!canDealDamage) return;
+
         Debug.Log("Attack");
 
         float direction = player.isFacingRight ? 1f : -1f;
@@ -67,6 +75,10 @@ public class PlayerAttack : MonoBehaviour
 
         foreach (Collider2D obj in hitEnemies)
         {
+            if(hitTargets.Contains(obj)) continue;
+
+            hitTargets.Add(obj);
+
             Debug.Log("Hit: " + obj.name);
 
             Instantiate(hitEffect, obj.transform.position, Quaternion.identity);
@@ -90,6 +102,17 @@ public class PlayerAttack : MonoBehaviour
     public void EndAttack()
     {
         player.isAttacking = false;
+        canDealDamage = false;
+    }
+
+    public void EnableHit()
+    {
+        canDealDamage = true;
+    }
+
+    public void DisableHit()
+    {
+        canDealDamage = false;
     }
 
     void OnDrawGizmosSelected()

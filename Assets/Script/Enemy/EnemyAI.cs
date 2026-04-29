@@ -1,29 +1,44 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class EnemyAI : MonoBehaviour
 {
-    public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
-    public Vector2 attackOffset = new Vector2(1f, 0.5f);
-    public LayerMask playerLayer;
-
     public float attackRange = 1.5f;
     public float attackCooldown = 1.5f;
+
+    public float moveSpeed = 2f;
+    public float chaseRange = 5f;
+
+    public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
+    public Vector2 attackOffset = new Vector2(1f, 0.5f);
+
+    public LayerMask playerLayer;
+
+    private bool isFacingRight = true;
+
+    private HashSet<Collider2D> hitTarget = new HashSet<Collider2D>();
+
+    private bool isAttacking;
+
+    private bool canDealDamage;
 
     private float nextTimeAttack;
 
     private Transform player;
 
-    private bool isFacingRight = true;
-
-    private bool isAttacking;
+    private EnemyHealth enemyHealth;
 
     private Animator animator;
 
-    private EnemyHealth enemyHealth;
+    private Rigidbody2D rb;
 
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
+
+        rb = GetComponent<Rigidbody2D>();
 
         animator = GetComponent<Animator>();
 
@@ -43,26 +58,37 @@ public class EnemyAI : MonoBehaviour
 
         float distance = Vector2.Distance(transform.position, player.position);
 
-        if (distance <= attackRange && Time.time >= nextTimeAttack)
+        animator.SetFloat("Walk", Mathf.Abs(rb.linearVelocity.x));
+
+        if (!isAttacking && distance <= attackRange && Time.time >= nextTimeAttack)
         {
             AttackPlayer();
         }
 
         if (isAttacking) return;
-        bool shouldFaceRight = player.position.x > transform.position.x;
 
+        if (distance <= chaseRange && distance > attackRange)
+        {
+            Chaseplayer();
+        }
+        else
+        {
+            StopMoving();
+        }
+
+        bool shouldFaceRight = player.position.x > transform.position.x;
         if (shouldFaceRight != isFacingRight)
         {
             isFacingRight = shouldFaceRight;
             Flip();
         }
-
     }
 
     void AttackPlayer()
     {
-
         if (isAttacking) return;
+
+        hitTarget.Clear();
 
         Debug.Log("Enemy Menyerang!");
 
@@ -77,38 +103,76 @@ public class EnemyAI : MonoBehaviour
     void Flip()
     {
         Vector3 scale = transform.localScale;
-        scale.x = Mathf.Abs(scale.x) * (isFacingRight ? 1 : -1);
+        scale.x = Math.Abs(scale.x) * (isFacingRight ? 1 : -1);
         transform.localScale = scale;
+    }
+
+    void Chaseplayer()
+    {
+        float direction = player.position.x > transform.position.x ? 1f : -1f;
+
+        rb.linearVelocity = new Vector2(direction * moveSpeed, rb.linearVelocity.y);
+    }
+
+    void StopMoving()
+    {
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+    }
+
+    public void EnableHit()
+    {
+        canDealDamage = true;
+    }
+
+    public void DisableHit()
+    {
+        canDealDamage = false;
     }
 
     public void EndAttack()
     {
         isAttacking = false;
+        canDealDamage = false;
         nextTimeAttack = Time.time + attackCooldown;
 
     }
 
+    public void CancelAttack()
+    {
+        isAttacking = false;
+        StopMoving();
+    }
+
     public void DealDamage()
     {
+        if (!canDealDamage) return;
+
         float direction = isFacingRight ? 1f : -1f;
 
         Vector2 boxCenter = (Vector2)transform.position +
         new Vector2(attackOffset.x * direction, attackOffset.y);
 
-        Collider2D hitPlayer = Physics2D.OverlapBox(
+        Collider2D[] hits = Physics2D.OverlapBoxAll(
             boxCenter,
             attackBoxSize,
             0f,
             playerLayer
         );
 
-        if (hitPlayer != null)
+        foreach (Collider2D hit in hits)
         {
-            Player p = hitPlayer.GetComponent<Player>();
+            if (hitTarget.Contains(hit)) continue;
 
-            if (p != null)
+            hitTarget.Add(hit);
+
+            if (hit != null)
             {
-                p.TakeHit();
+                Player p = hit.GetComponent<Player>();
+
+                if (p != null)
+                {
+                    p.TakeHit();
+                }
             }
         }
     }
@@ -122,6 +186,6 @@ public class EnemyAI : MonoBehaviour
         Vector2 boxCenter = (Vector2)transform.position +
         new Vector2(attackOffset.x * direction, attackOffset.y);
 
-        Gizmos.DrawWireCube(boxCenter, attackBoxSize);
+        Gizmos.DrawWireCube(boxCenter, new Vector3(attackBoxSize.x, attackBoxSize.y, 1f));
     }
 }

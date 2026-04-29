@@ -36,13 +36,6 @@ public class Player : MonoBehaviour
     public bool isHurt;
     private Rigidbody2D rb;
     private Animator animator;
-    void OnDrawGizmosSelected()
-    {
-        if (groundCheck == null) return;
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(groundCheck.position, groundRadius);
-    }
 
     void Flip()
     {

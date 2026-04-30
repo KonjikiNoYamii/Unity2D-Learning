@@ -11,10 +11,14 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     public GameObject hitEffect;
 
     [Header("Knockback Settings")]
-    public float knockbackForceX = 5f;
-    public float knockbackForceY = 3f;
+    public float knockbackForceX = 50f;
+    public float knockbackForceY = 10f;
+
+    public float stunDuration = 0.6f;
 
     private bool isHurt = false;
+
+    private bool isKnockback;
     private Rigidbody2D rb;
     private Transform player;
     private Animator animator;
@@ -55,8 +59,21 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
             Vector2 force = new Vector2(dir * knockbackForceX, knockbackForceY);
 
+            isKnockback = true;
+
             rb.linearVelocity = Vector2.zero;
             rb.AddForce(force, ForceMode2D.Impulse);
+            rb.gravityScale = 1f;
+
+            Debug.Log("Velocity setelah knockback: " + rb.linearVelocity);
+
+            EnemyAI ai = GetComponent<EnemyAI>();
+
+            if (ai != null)
+            {
+                ai.CancelAttack();
+            }
+
         }
 
         if (currentHp <= 0)
@@ -74,6 +91,11 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         return isHurt;
     }
 
+    public bool IsKnockback()
+    {
+        return isKnockback;
+    }
+
     IEnumerator Hurt()
     {
         isHurt = true;
@@ -86,8 +108,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
         animator.SetTrigger("Hurt");
 
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(stunDuration);
 
+        isKnockback = false;
         isHurt = false;
     }
     void Die()

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class EnemyAI : MonoBehaviour
@@ -8,11 +7,12 @@ public class EnemyAI : MonoBehaviour
     public float attackRange = 1.5f;
     public float attackCooldown = 1.5f;
 
-    public float moveSpeed = 2f;
-    public float chaseRange = 5f;
-
     public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
     public Vector2 attackOffset = new Vector2(1f, 0.5f);
+
+    public float moveSpeed = 1.5f;
+
+    public float chaseRange = 5f;
 
     public LayerMask playerLayer;
 
@@ -38,9 +38,9 @@ public class EnemyAI : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
-        rb = GetComponent<Rigidbody2D>();
-
         animator = GetComponent<Animator>();
+
+        rb = GetComponent<Rigidbody2D>();
 
         enemyHealth = GetComponent<EnemyHealth>();
 
@@ -54,9 +54,28 @@ public class EnemyAI : MonoBehaviour
     {
         if (player == null) return;
 
-        if (enemyHealth != null && enemyHealth.IsHurt()) return;
+        if (enemyHealth != null)
+        {
+            if (enemyHealth.IsKnockback())
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y);
+                animator.SetFloat("Walk", 0f);
+                return;
+            }
+            if (enemyHealth.IsHurt())
+            {
+                StopMoving();
+                return;
+            }
+        }
 
         float distance = Vector2.Distance(transform.position, player.position);
+
+        if (enemyHealth != null && enemyHealth.IsKnockback())
+        {
+            animator.SetFloat("Walk", 0f);
+            return;
+        }
 
         animator.SetFloat("Walk", Mathf.Abs(rb.linearVelocity.x));
 
@@ -69,7 +88,7 @@ public class EnemyAI : MonoBehaviour
 
         if (distance <= chaseRange && distance > attackRange)
         {
-            Chaseplayer();
+            ChasePlayer();
         }
         else
         {
@@ -86,7 +105,7 @@ public class EnemyAI : MonoBehaviour
 
     void AttackPlayer()
     {
-        if (isAttacking) return;
+        if (isAttacking || enemyHealth.IsKnockback()) return;
 
         hitTarget.Clear();
 
@@ -107,16 +126,21 @@ public class EnemyAI : MonoBehaviour
         transform.localScale = scale;
     }
 
-    void Chaseplayer()
+    void ChasePlayer()
     {
         float direction = player.position.x > transform.position.x ? 1f : -1f;
 
-        rb.linearVelocity = new Vector2(direction * moveSpeed, rb.linearVelocity.y);
+        float targetSpeed = direction * moveSpeed;
+
+        float newVelocityX = Mathf.Lerp(rb.linearVelocity.x, targetSpeed, 0.2f);
+
+        rb.linearVelocity = new Vector2(newVelocityX, rb.linearVelocity.y);
     }
 
     void StopMoving()
     {
-        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        float newX = Mathf.Lerp(rb.linearVelocity.x, 0f, 0.2f);
+        rb.linearVelocity = new Vector2(newX, rb.linearVelocity.y);
     }
 
     public void EnableHit()
@@ -140,6 +164,11 @@ public class EnemyAI : MonoBehaviour
     public void CancelAttack()
     {
         isAttacking = false;
+        canDealDamage = false;
+
+        animator.ResetTrigger("Attack");
+        animator.Play("Walk");
+
         StopMoving();
     }
 

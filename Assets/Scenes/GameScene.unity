@@ -1731,6 +1731,7 @@ MonoBehaviour:
   hitEffect: {fileID: 3188756844937486017, guid: 637003aeb5c8ff841adc95c495c82047, type: 3}
   knockbackForceX: 5
   knockbackForceY: 3
+  stunDuration: 0.6
 --- !u!50 &2071261560
 Rigidbody2D:
   serializedVersion: 5
@@ -1916,6 +1917,8 @@ MonoBehaviour:
   attackCooldown: 1.5
   attackBoxSize: {x: 1.5, y: 1}
   attackOffset: {x: 1, y: 0.5}
+  moveSpeed: 1
+  chaseRange: 5
   playerLayer:
     serializedVersion: 2
     m_Bits: 512

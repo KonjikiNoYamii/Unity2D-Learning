@@ -103,12 +103,17 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         EnemyAI ai = GetComponent<EnemyAI>();
         if (ai != null)
         {
-            ai.CancelAttack();
+            ai.SetHurtState();
         }
 
         animator.SetTrigger("Hurt");
 
         yield return new WaitForSeconds(stunDuration);
+
+        if (ai != null)
+        {
+            ai.RecoverFromHurt();
+        }
 
         isKnockback = false;
         isHurt = false;

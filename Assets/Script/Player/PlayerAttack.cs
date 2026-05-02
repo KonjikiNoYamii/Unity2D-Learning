@@ -19,6 +19,9 @@ public class PlayerAttack : MonoBehaviour
     [Header("Attack Direction")]
     public Vector2 attackOffset = new Vector2(0.5f, 0.7f);
 
+    public float InputBufferTime = 0.2f;
+    private float InputBufferCounter;
+
     private HashSet<Collider2D> hitTargets = new HashSet<Collider2D>();
 
     private Player player;
@@ -43,16 +46,67 @@ public class PlayerAttack : MonoBehaviour
 
     void Update()
     {
+        HandleInput();
+        HandleBuffer();
 
-        if (Input.GetMouseButtonDown(0) && Time.time >= nextAttackTime && !player.isAttacking && !player.isHurt)
+        // if (Input.GetMouseButtonDown(0) && Time.time >= nextAttackTime && !player.isAttacking && !player.isHurt)
+        // {
+        //     hitTargets.Clear();
+        //     player.isAttacking = true;
+
+        //     animator.SetTrigger("Attack");
+
+        //     nextAttackTime = Time.time + attackCooldown;
+        // }
+    }
+
+    void HandleInput()
+    {
+        if (Input.GetMouseButtonDown(0))
         {
-            hitTargets.Clear();
-            player.isAttacking = true;
-
-            animator.SetTrigger("Attack");
-
-            nextAttackTime = Time.time + attackCooldown;
+            InputBufferCounter = InputBufferTime;
         }
+    }
+
+    void HandleBuffer()
+    {
+        if (InputBufferCounter > 0)
+        {
+            TryAttack();
+            InputBufferCounter -= Time.deltaTime;
+        }
+    }
+
+    void TryAttack()
+    {
+        if (!CanAttack()) return;
+
+        StartAttack();
+    }
+
+    bool CanAttack()
+    {
+        if (Time.time < nextAttackTime) return false;
+        if (player.isAttacking) return false;
+        if (player.isHurt) return false;
+
+        return true;
+    }
+
+    void StartAttack()
+    {
+        hitTargets.Clear();
+
+        player.isAttacking = true;
+
+        if (animator != null)
+        {
+            animator.SetTrigger("Attack");
+        }
+
+        nextAttackTime = Time.time + attackCooldown;
+
+        InputBufferCounter = 0f;
     }
 
     public void Attack()
@@ -75,7 +129,7 @@ public class PlayerAttack : MonoBehaviour
 
         foreach (Collider2D obj in hitEnemies)
         {
-            if(hitTargets.Contains(obj)) continue;
+            if (hitTargets.Contains(obj)) continue;
 
             hitTargets.Add(obj);
 

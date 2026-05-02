@@ -4,6 +4,17 @@ using UnityEngine;
 
 public class EnemyAI : MonoBehaviour
 {
+    public enum EnemyState
+    {
+        Idle,
+        Chase,
+        Attack,
+        Hurt,
+        Dead
+    }
+
+    private EnemyState currentState;
+
     public float attackRange = 1.5f;
     public float attackCooldown = 1.5f;
 
@@ -11,38 +22,31 @@ public class EnemyAI : MonoBehaviour
     public Vector2 attackOffset = new Vector2(1f, 0.5f);
 
     public float moveSpeed = 1.5f;
-
     public float chaseRange = 5f;
 
     public LayerMask playerLayer;
 
     private bool isFacingRight = true;
-
-    private HashSet<Collider2D> hitTarget = new HashSet<Collider2D>();
-
     private bool isAttacking;
-
     private bool canDealDamage;
 
     private float nextTimeAttack;
 
     private Transform player;
-
     private EnemyHealth enemyHealth;
-
     private Animator animator;
-
     private Rigidbody2D rb;
+
+    private HashSet<Collider2D> hitTarget = new HashSet<Collider2D>();
 
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
-
+        enemyHealth = GetComponent<EnemyHealth>();
         animator = GetComponent<Animator>();
-
         rb = GetComponent<Rigidbody2D>();
 
-        enemyHealth = GetComponent<EnemyHealth>();
+        currentState = EnemyState.Idle;
 
         if (player == null)
         {
@@ -54,62 +58,96 @@ public class EnemyAI : MonoBehaviour
     {
         if (player == null) return;
 
-        if (enemyHealth != null)
-        {
-            if (enemyHealth.IsKnockback())
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y);
-                animator.SetFloat("Walk", 0f);
-                return;
-            }
-            if (enemyHealth.IsHurt())
-            {
-                StopMoving();
-                return;
-            }
-        }
-
-        float distance = Vector2.Distance(transform.position, player.position);
-
         if (enemyHealth != null && enemyHealth.IsKnockback())
         {
-            animator.SetFloat("Walk", 0f);
             return;
         }
 
-        animator.SetFloat("Walk", Mathf.Abs(rb.linearVelocity.x));
+        HandleFlip();
+        UpdateAnimator();
 
-        if (!isAttacking && distance <= attackRange && Time.time >= nextTimeAttack)
+        switch (currentState)
+        {
+            case EnemyState.Idle:
+                HandleIdle();
+                break;
+
+            case EnemyState.Chase:
+                HandleChase();
+                break;
+
+            case EnemyState.Attack:
+                HandleAttack();
+                break;
+
+            case EnemyState.Hurt:
+                HandleHurt();
+                break;
+
+            case EnemyState.Dead:
+                break;
+        }
+    }
+
+    void HandleIdle()
+    {
+        StopMoving();
+
+        float distance = Vector2.Distance(transform.position, player.position);
+
+        if (distance <= chaseRange)
+        {
+            ChangeState(EnemyState.Chase);
+        }
+    }
+
+    void HandleChase()
+    {
+        float distance = Vector2.Distance(transform.position, player.position);
+
+        if (distance <= attackRange)
+        {
+            ChangeState(EnemyState.Attack);
+            return;
+        }
+
+        if (distance > chaseRange)
+        {
+            ChangeState(EnemyState.Idle);
+            return;
+        }
+
+        ChasePlayer();
+    }
+
+    void HandleAttack()
+    {
+        StopMoving();
+
+        float distance = Vector2.Distance(transform.position, player.position);
+
+        if (distance > attackRange)
+        {
+            ChangeState(EnemyState.Chase);
+            return;
+        }
+
+        if (!isAttacking && Time.time >= nextTimeAttack)
         {
             AttackPlayer();
         }
+    }
 
-        if (isAttacking) return;
-
-        if (distance <= chaseRange && distance > attackRange)
-        {
-            ChasePlayer();
-        }
-        else
-        {
-            StopMoving();
-        }
-
-        bool shouldFaceRight = player.position.x > transform.position.x;
-        if (shouldFaceRight != isFacingRight)
-        {
-            isFacingRight = shouldFaceRight;
-            Flip();
-        }
+    void HandleHurt()
+    {
+        StopMoving();
     }
 
     void AttackPlayer()
     {
-        if (isAttacking || enemyHealth.IsKnockback()) return;
+        if (isAttacking) return;
 
         hitTarget.Clear();
-
-        Debug.Log("Enemy Menyerang!");
 
         isAttacking = true;
 
@@ -119,11 +157,35 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    void Flip()
+    public void DealDamage()
     {
-        Vector3 scale = transform.localScale;
-        scale.x = Math.Abs(scale.x) * (isFacingRight ? 1 : -1);
-        transform.localScale = scale;
+        if (!canDealDamage) return;
+
+        float direction = isFacingRight ? 1f : -1f;
+
+        Vector2 boxCenter = (Vector2)transform.position +
+            new Vector2(attackOffset.x * direction, attackOffset.y);
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(
+            boxCenter,
+            attackBoxSize,
+            0f,
+            playerLayer
+        );
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hitTarget.Contains(hit)) continue;
+
+            hitTarget.Add(hit);
+
+            Player p = hit.GetComponent<Player>();
+
+            if (p != null)
+            {
+                p.TakeHit();
+            }
+        }
     }
 
     void ChasePlayer()
@@ -143,6 +205,57 @@ public class EnemyAI : MonoBehaviour
         rb.linearVelocity = new Vector2(newX, rb.linearVelocity.y);
     }
 
+    void HandleFlip()
+    {
+        bool shouldFaceRight = player.position.x > transform.position.x;
+
+        if (shouldFaceRight != isFacingRight)
+        {
+            isFacingRight = shouldFaceRight;
+            Flip();
+        }
+    }
+
+    void Flip()
+    {
+        Vector3 scale = transform.localScale;
+        scale.x = Math.Abs(scale.x) * (isFacingRight ? 1 : -1);
+        transform.localScale = scale;
+    }
+
+    void UpdateAnimator()
+    {
+        if (animator != null)
+        {
+            animator.SetFloat("Walk", Mathf.Abs(rb.linearVelocity.x));
+        }
+    }
+
+    void ChangeState(EnemyState newState)
+    {
+        if (currentState == newState) return;
+
+        currentState = newState;
+    }
+
+    public void SetHurtState()
+    {
+        CancelAttack();
+        ChangeState(EnemyState.Hurt);
+    }
+
+    public void RecoverFromHurt()
+    {
+        ChangeState(EnemyState.Chase);
+    }
+
+    public void EndAttack()
+    {
+        isAttacking = false;
+        canDealDamage = false;
+        nextTimeAttack = Time.time + attackCooldown;
+    }
+
     public void EnableHit()
     {
         canDealDamage = true;
@@ -153,57 +266,18 @@ public class EnemyAI : MonoBehaviour
         canDealDamage = false;
     }
 
-    public void EndAttack()
-    {
-        isAttacking = false;
-        canDealDamage = false;
-        nextTimeAttack = Time.time + attackCooldown;
-
-    }
-
     public void CancelAttack()
     {
         isAttacking = false;
         canDealDamage = false;
 
-        animator.ResetTrigger("Attack");
-        animator.Play("Walk");
+        if (animator != null)
+        {
+            animator.ResetTrigger("Attack");
+            animator.Play("Walk");
+        }
 
         StopMoving();
-    }
-
-    public void DealDamage()
-    {
-        if (!canDealDamage) return;
-
-        float direction = isFacingRight ? 1f : -1f;
-
-        Vector2 boxCenter = (Vector2)transform.position +
-        new Vector2(attackOffset.x * direction, attackOffset.y);
-
-        Collider2D[] hits = Physics2D.OverlapBoxAll(
-            boxCenter,
-            attackBoxSize,
-            0f,
-            playerLayer
-        );
-
-        foreach (Collider2D hit in hits)
-        {
-            if (hitTarget.Contains(hit)) continue;
-
-            hitTarget.Add(hit);
-
-            if (hit != null)
-            {
-                Player p = hit.GetComponent<Player>();
-
-                if (p != null)
-                {
-                    p.TakeHit();
-                }
-            }
-        }
     }
 
     void OnDrawGizmosSelected()
@@ -213,7 +287,7 @@ public class EnemyAI : MonoBehaviour
         float direction = isFacingRight ? 1f : -1f;
 
         Vector2 boxCenter = (Vector2)transform.position +
-        new Vector2(attackOffset.x * direction, attackOffset.y);
+            new Vector2(attackOffset.x * direction, attackOffset.y);
 
         Gizmos.DrawWireCube(boxCenter, new Vector3(attackBoxSize.x, attackBoxSize.y, 1f));
     }

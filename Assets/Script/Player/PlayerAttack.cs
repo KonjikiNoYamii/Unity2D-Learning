@@ -10,6 +10,13 @@ public class PlayerAttack : MonoBehaviour
     public float attackRange = 0.5f;
     public LayerMask enemyLayer;
 
+    [Header("Combo Settings")]
+
+    public int maxCombo = 3;
+    private int comboIndex = 0;
+    private float comboTimer;
+    private float comboResetTime = 0.8f;
+
     private bool canDealDamage;
 
     [Header("Cooldown Settings")]
@@ -47,17 +54,19 @@ public class PlayerAttack : MonoBehaviour
     void Update()
     {
         HandleInput();
+
+        if (comboIndex > 0)
+        {
+            comboTimer += Time.deltaTime;
+
+            if (comboTimer > comboResetTime)
+            {
+                comboIndex = 0;
+                comboTimer = 0;
+            }
+        }
+
         HandleBuffer();
-
-        // if (Input.GetMouseButtonDown(0) && Time.time >= nextAttackTime && !player.isAttacking && !player.isHurt)
-        // {
-        //     hitTargets.Clear();
-        //     player.isAttacking = true;
-
-        //     animator.SetTrigger("Attack");
-
-        //     nextAttackTime = Time.time + attackCooldown;
-        // }
     }
 
     void HandleInput()
@@ -86,7 +95,6 @@ public class PlayerAttack : MonoBehaviour
 
     bool CanAttack()
     {
-        if (Time.time < nextAttackTime) return false;
         if (player.isAttacking) return false;
         if (player.isHurt) return false;
 
@@ -97,16 +105,27 @@ public class PlayerAttack : MonoBehaviour
     {
         hitTargets.Clear();
 
+        comboIndex++;
+
+        if (comboIndex > maxCombo)
+        {
+            comboIndex = 1;
+        }
+
         player.isAttacking = true;
 
         if (animator != null)
         {
+            animator.SetInteger("Combo", comboIndex);
             animator.SetTrigger("Attack");
+
+            Debug.Log("Combo " + comboIndex);
         }
 
         nextAttackTime = Time.time + attackCooldown;
 
         InputBufferCounter = 0f;
+        comboTimer = 0;
     }
 
     public void Attack()

@@ -3,14 +3,11 @@ using System.Collections.Generic;
 
 public class PlayerAttack : MonoBehaviour
 {
+    public AttackData[] attacks;
+
+    public Hitbox hitbox;
+    private AttackData currentAttack;
     public GameObject hitEffect;
-
-    [Header("Attack Settings")]
-    public int attackDamage = 1;
-    public float attackRange = 0.5f;
-    public LayerMask enemyLayer;
-
-    private bool canDealDamage;
 
     [Header("Combo Settings")]
     public int maxCombo = 3;
@@ -24,13 +21,8 @@ public class PlayerAttack : MonoBehaviour
     private float nextAttackTime = 0f;
 
     [Header("Attack Direction")]
-    public Vector2 attackOffset = new Vector2(0.5f, 0.7f);
-
     public float InputBufferTime = 0.2f;
     private float InputBufferCounter;
-
-    private HashSet<Collider2D> hitTargets = new HashSet<Collider2D>();
-
     private Player player;
     private Animator animator;
 
@@ -49,6 +41,14 @@ public class PlayerAttack : MonoBehaviour
         {
             Debug.Log("Animator tidak ditemukan di player");
         }
+
+        if (attacks == null || attacks.Length == 0)
+        {
+            Debug.Log("Attacks belum diisi");
+        }
+
+        hitbox.gameObject.SetActive(false);
+
     }
 
     void Update()
@@ -101,14 +101,18 @@ public class PlayerAttack : MonoBehaviour
 
     void StartAttack()
     {
-        hitTargets.Clear();
 
         comboIndex++;
 
-        if (comboIndex > maxCombo)
+        if (comboIndex > attacks.Length)
         {
-            comboIndex = 0;
+            comboIndex = 1;
         }
+
+        int index = Mathf.Clamp(comboIndex - 1, 0, attacks.Length - 1);
+        currentAttack = attacks[index];
+
+        hitbox.SetAttackData(currentAttack);
 
         player.isAttacking = true;
 
@@ -126,64 +130,24 @@ public class PlayerAttack : MonoBehaviour
         comboTimer = 0;
     }
 
-    public void Attack()
-    {
-        if (!canDealDamage) return;
-
-        Debug.Log("Attack");
-
-        float direction = player.isFacingRight ? 1f : -1f;
-
-        Vector2 attackPos = (Vector2)transform.position +
-        new Vector2(attackOffset.x * direction, attackOffset.y);
-
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(
-            attackPos,
-            attackRange,
-            enemyLayer
-        );
-
-
-        foreach (Collider2D obj in hitEnemies)
-        {
-            if (hitTargets.Contains(obj)) continue;
-
-            hitTargets.Add(obj);
-
-            Debug.Log("Hit: " + obj.name);
-
-            Instantiate(hitEffect, obj.transform.position, Quaternion.identity);
-
-            IDamageable damageable = obj.GetComponent<IDamageable>();
-
-
-            if (damageable != null)
-            {
-                damageable.TakeDamage(attackDamage);
-
-                if (HitStopManager.Instance != null)
-                {
-                    HitStopManager.Instance.Stop(0.2f);
-                }
-            }
-
-        }
-    }
-
     public void EndAttack()
     {
         player.isAttacking = false;
-        canDealDamage = false;
     }
 
     public void EnableHit()
     {
-        canDealDamage = true;
+        float direction = player.isFacingRight ? 1f : -1f;
+
+        Vector2 offset = currentAttack.offset;
+
+        hitbox.transform.localPosition = new Vector3(offset.x, currentAttack.offset.y, 0);
+        hitbox.gameObject.SetActive(true);
     }
 
     public void DisableHit()
     {
-        canDealDamage = false;
+        hitbox.gameObject.SetActive(false);
     }
 
     void OnDrawGizmosSelected()
@@ -191,12 +155,20 @@ public class PlayerAttack : MonoBehaviour
         Player p = GetComponent<Player>();
         if (p == null) return;
 
+        if (attacks == null || attacks.Length == 0) return;
+        if (attacks[0] == null) return;
+
         float direction = p.isFacingRight ? 1f : -1f;
 
+        AttackData previewAttack = currentAttack != null ? currentAttack : attacks[0];
+
+        Vector2 offset = previewAttack.offset;
+        float range = previewAttack.range;
+
         Vector2 attackPos = (Vector2)transform.position +
-        new Vector2(attackOffset.x * direction, attackOffset.y);
+            new Vector2(offset.x * direction, offset.y);
 
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(attackPos, attackRange);
+        Gizmos.DrawWireSphere(attackPos, range);
     }
 }

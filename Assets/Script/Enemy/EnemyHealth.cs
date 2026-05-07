@@ -11,9 +11,6 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     public GameObject hitEffect;
 
     [Header("Knockback Settings")]
-    public float knockbackForceX = 50f;
-    public float knockbackForceY = 10f;
-
     public float stunDuration = 0.6f;
 
     private bool isHurt = false;
@@ -37,9 +34,10 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         {
             Debug.LogError("Player tidak ditemukan! Pastikan tag Player ada.");
         }
+
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, float knockbackX, float knockbackY)
     {
         if (isHurt) return;
 
@@ -57,7 +55,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         {
             float dir = Mathf.Sign(transform.position.x - player.position.x);
 
-            Vector2 force = new Vector2(dir * knockbackForceX, knockbackForceY);
+            Vector2 force = new Vector2(dir * knockbackX, knockbackY);
 
             isKnockback = true;
 

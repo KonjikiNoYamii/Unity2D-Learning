@@ -198,23 +198,4 @@ public class Player : MonoBehaviour
         }
 
     }
-
-    public void TakeHit()
-    {
-        isHurt = true;
-
-        isAttacking = false;
-
-        animator.SetTrigger("Hurt");
-
-        StartCoroutine(HurtRoutine());
-    }
-
-    IEnumerator HurtRoutine()
-    {
-        yield return new WaitForSeconds(0.3f);
-
-        isHurt = false;
-    }
-
 }

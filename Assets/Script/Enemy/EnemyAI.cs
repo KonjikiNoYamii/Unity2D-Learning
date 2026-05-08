@@ -179,11 +179,11 @@ public class EnemyAI : MonoBehaviour
 
             hitTarget.Add(hit);
 
-            Player p = hit.GetComponent<Player>();
+            PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
 
-            if (p != null)
+            if (playerHealth != null)
             {
-                p.TakeHit();
+                playerHealth.TakeDamage(1);
             }
         }
     }

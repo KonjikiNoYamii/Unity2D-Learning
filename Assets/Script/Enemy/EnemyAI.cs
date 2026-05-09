@@ -181,6 +181,7 @@ public class EnemyAI : MonoBehaviour
 
             PlayerHealth playerHealth = hit.GetComponent<PlayerHealth>();
 
+
             if (playerHealth != null)
             {
                 playerHealth.TakeDamage(1);

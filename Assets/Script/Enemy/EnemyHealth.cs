@@ -93,7 +93,6 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     {
         return isKnockback;
     }
-
     IEnumerator Hurt()
     {
         isHurt = true;

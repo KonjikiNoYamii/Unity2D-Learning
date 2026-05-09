@@ -69,4 +69,14 @@ public class PlayerHealth : MonoBehaviour
         
         gameObject.SetActive(false);
     }
+
+    public int GetMaxHealth()
+    {
+        return maxHealth;
+    }
+
+    public int GetCurrentHealth()
+    {
+        return currentHealth;
+    }
 }

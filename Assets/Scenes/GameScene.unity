@@ -1208,6 +1208,7 @@ MonoBehaviour:
   isFacingRight: 1
   isAttacking: 0
   isHurt: 0
+  isDead: 0
 --- !u!212 &1484432188
 SpriteRenderer:
   serializedVersion: 2

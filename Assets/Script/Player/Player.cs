@@ -34,6 +34,7 @@ public class Player : MonoBehaviour
     public bool isFacingRight = true;
     public bool isAttacking;
     public bool isHurt;
+    public bool isDead;
     private Rigidbody2D rb;
     private Animator animator;
 
@@ -59,7 +60,7 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        if (!isAttacking && !isHurt)
+        if (!isAttacking && !isHurt && !isDead)
         {
             move = Input.GetAxis("Horizontal");
         }

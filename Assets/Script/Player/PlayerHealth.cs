@@ -25,8 +25,8 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if(isInvicible) return;
-        if(player.isHurt) return;
+        if (isInvicible) return;
+        if (player.isHurt) return;
 
         currentHealth -= damage;
 
@@ -65,9 +65,13 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
+        player.isDead = true;
+
+        animator.SetTrigger("Dead");
+
         Debug.Log("Player Is Dead");
-        
-        gameObject.SetActive(false);
+
+        StartCoroutine(RespawnCoroutine());
     }
 
     public int GetMaxHealth()
@@ -78,5 +82,18 @@ public class PlayerHealth : MonoBehaviour
     public int GetCurrentHealth()
     {
         return currentHealth;
+    }
+
+    IEnumerator RespawnCoroutine()
+    {
+        yield return new WaitForSeconds(2f);
+
+        currentHealth = maxHealth;
+
+        player.isDead = false;
+
+        transform.position = Vector2.zero;
+
+        animator.Play("Idle");
     }
 }

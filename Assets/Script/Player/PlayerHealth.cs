@@ -94,6 +94,8 @@ public class PlayerHealth : MonoBehaviour
 
         transform.position = Vector2.zero;
 
+        isInvicible = false;
+
         animator.Play("Idle");
     }
 }

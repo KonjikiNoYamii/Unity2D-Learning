@@ -7,6 +7,7 @@ public class EnemyAI : MonoBehaviour
     public enum EnemyState
     {
         Idle,
+        Patrol,
         Chase,
         Attack,
         Hurt,
@@ -21,10 +22,20 @@ public class EnemyAI : MonoBehaviour
     public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
     public Vector2 attackOffset = new Vector2(1f, 0.5f);
 
+    public Transform pointA;
+    public Transform pointB;
+    private Transform currentPoint;
+
     public float moveSpeed = 1.5f;
     public float chaseRange = 5f;
 
     public LayerMask playerLayer;
+
+    public Transform edgeCheck;
+
+    public float edgeCheckDistance = 1f;
+
+    public LayerMask groundLayer;
 
     private bool isFacingRight = true;
     private bool isAttacking;
@@ -41,12 +52,13 @@ public class EnemyAI : MonoBehaviour
 
     void Start()
     {
+        currentPoint = pointB;
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
         enemyHealth = GetComponent<EnemyHealth>();
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
 
-        currentState = EnemyState.Idle;
+        currentState = EnemyState.Patrol;
 
         if (player == null)
         {
@@ -72,6 +84,10 @@ public class EnemyAI : MonoBehaviour
                 HandleIdle();
                 break;
 
+            case EnemyState.Patrol:
+                HandlePatrol();
+                break;
+
             case EnemyState.Chase:
                 HandleChase();
                 break;
@@ -86,6 +102,67 @@ public class EnemyAI : MonoBehaviour
 
             case EnemyState.Dead:
                 break;
+        }
+    }
+
+    bool isGroundAhead()
+    {
+        RaycastHit2D hit = Physics2D.Raycast(
+            edgeCheck.position,
+            Vector2.down,
+            edgeCheckDistance,
+            groundLayer
+        );
+
+        Debug.DrawRay(
+            edgeCheck.position,
+            Vector2.down * edgeCheckDistance,
+            Color.red
+        );
+
+        return hit.collider != null;
+    }
+
+    void HandlePatrol()
+    {
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        if (distanceToPlayer <= chaseRange)
+        {
+            ChangeState(EnemyState.Chase);
+            return;
+        }
+
+        if (!isGroundAhead())
+        {
+            if (currentPoint == pointA)
+            {
+                currentPoint = pointB;
+            }
+            else
+            {
+                currentPoint = pointA;
+            }
+
+            return;
+        }
+
+        Vector2 direction = (currentPoint.position - transform.position).normalized;
+        rb.linearVelocity = new Vector2(
+            direction.x * moveSpeed,
+            rb.linearVelocity.y
+        );
+
+        float distanceToPoint = Vector2.Distance(transform.position, currentPoint.position);
+        if (distanceToPoint <= 0.2f)
+        {
+            if (currentPoint == pointA)
+            {
+                currentPoint = pointB;
+            }
+            else
+            {
+                currentPoint = pointA;
+            }
         }
     }
 
@@ -113,7 +190,7 @@ public class EnemyAI : MonoBehaviour
 
         if (distance > chaseRange)
         {
-            ChangeState(EnemyState.Idle);
+            ChangeState(EnemyState.Patrol);
             return;
         }
 
@@ -208,7 +285,14 @@ public class EnemyAI : MonoBehaviour
 
     void HandleFlip()
     {
-        bool shouldFaceRight = player.position.x > transform.position.x;
+        Transform target = player;
+
+        if (currentState == EnemyState.Patrol)
+        {
+            target = currentPoint;
+        }
+
+        bool shouldFaceRight = target.position.x > transform.position.x;
 
         if (shouldFaceRight != isFacingRight)
         {

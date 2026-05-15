@@ -14,41 +14,43 @@ public class EnemyAI : MonoBehaviour
         Dead
     }
 
+    [Header("State Machine")]
     private EnemyState currentState;
 
-    public float attackRange = 1.5f;
-    public float attackCooldown = 1.5f;
-
-    public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
-    public Vector2 attackOffset = new Vector2(1f, 0.5f);
-
+    [Header("Movement & Patrol")]
+    public float moveSpeed = 1.5f;
     public Transform pointA;
     public Transform pointB;
     private Transform currentPoint;
-
-    public float moveSpeed = 1.5f;
-    public float chaseRange = 5f;
-
-    public LayerMask playerLayer;
-
-    public Transform edgeCheck;
-
-    public float edgeCheckDistance = 1f;
-
-    public LayerMask groundLayer;
-
     private bool isFacingRight = true;
+
+    [Header("Detection")]
+    public float chaseRange = 5f;
+    public LayerMask playerLayer;
+    private Transform player;
+
+    [Header("Combat Settings")]
+    public float attackRange = 1.5f;
+    public float attackCooldown = 1.5f;
+    private float nextTimeAttack;
     private bool isAttacking;
     private bool canDealDamage;
 
-    private float nextTimeAttack;
+    [Header("Attack Hitbox")]
+    public Vector2 attackBoxSize = new Vector2(1.5f, 1f);
+    public Vector2 attackOffset = new Vector2(1f, 0.5f);
+    private HashSet<Collider2D> hitTarget = new HashSet<Collider2D>();
 
-    private Transform player;
+    [Header("Environment Check")]
+    public Transform edgeCheck;
+    public float edgeCheckDistance = 1f;
+    public LayerMask groundLayer;
+
+    [Header("Components")]
     private EnemyHealth enemyHealth;
     private Animator animator;
     private Rigidbody2D rb;
 
-    private HashSet<Collider2D> hitTarget = new HashSet<Collider2D>();
 
     void Start()
     {

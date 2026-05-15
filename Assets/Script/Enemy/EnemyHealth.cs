@@ -20,6 +20,8 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     private Transform player;
     private Animator animator;
 
+    private DropTable dropTable;
+
 
     void Start()
     {
@@ -34,6 +36,8 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         {
             Debug.LogError("Player tidak ditemukan! Pastikan tag Player ada.");
         }
+
+        dropTable = GetComponent<DropTable>();
 
     }
 
@@ -118,6 +122,11 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     void Die()
     {
         Debug.Log(gameObject.name + " Mati");
+
+        if (dropTable != null)
+        {
+            dropTable.DropItems();
+        }
         Destroy(gameObject);
     }
 }

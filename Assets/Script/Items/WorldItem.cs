@@ -25,6 +25,13 @@ public class WorldItem : MonoBehaviour
     {
         if (!collision.CompareTag("Player")) return;
 
+        Inventory inventory = collision.GetComponent<Inventory>();
+
+        if (inventory != null)
+        {
+            inventory.AddItem(itemData, amount);
+        }
+
         Debug.Log("Pickup Item: " + itemData.itemName);
 
         Destroy(gameObject);
